@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>闲鱼自动收发货工具</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            background: #0d1117;
+            color: #e9ecef;
+        }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        .page { background: #0d1117; }
+        .page-wrapper { background: #0d1117; }
+        .page-body { background: #0d1117; }
+        
+        .navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+        .navbar-brand { color: #e9ecef; }
+        
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #e9ecef;
+        }
+        
+        .card-header {
+            background: #0d1117;
+            border-bottom: 1px solid #30363d;
+            color: #e9ecef;
+        }
+        
+        .card-title { color: #e9ecef; }
+        
+        .form-control {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #e9ecef;
+        }
+        
+        .form-control:focus {
+            background: #0d1117;
+            border-color: #58a6ff;
+            color: #e9ecef;
+        }
+        
+        .form-control::placeholder { color: #6e7681; }
+        
+        .form-label { color: #c9d1d9; }
+        
+        .subheader { color: #6e7681; }
+        
+        .alert { background: #161b22; border: 1px solid #30363d; color: #e9ecef; }
+        .alert-info { background: #161b22; border-color: #58a6ff; }
+        
+        .text-muted { color: #6e7681; }
+        
+        .stat-card { 
+            transition: all 0.3s ease;
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border-color: #58a6ff;
+        }
+        
+        .item-card { 
+            transition: all 0.3s ease; 
+            border: 2px solid transparent;
+            background: #161b22;
+        }
+        .item-card:hover { 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); 
+            border-color: #58a6ff;
+        }
+        .item-card.active { 
+            border-color: #3fb950; 
+            background: #0d2818;
+        }
+        
+        .log-container { 
+            background: #0d1117; 
+            color: #79c0ff; 
+            font-family: 'Courier New', monospace; 
+            font-size: 0.875rem; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            padding: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        .status-indicator { 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%; 
+            display: inline-block; 
+            margin-right: 8px; 
+        }
+        .status-indicator.running { 
+            background: #3fb950; 
+            animation: pulse 2s infinite; 
+        }
+        .status-indicator.stopped { 
+            background: #f85149; 
+        }
+        
+        .status-check-time {
+            font-size: 0.75rem;
+            color: #6e7681;
+            margin-left: 10px;
+        }
+        
+        @keyframes pulse { 
+            0%, 100% { opacity: 1; } 
+            50% { opacity: 0.5; } 
+        }
+        
+        /* 改进的弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal-content {
+            background: #161b22;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e9ecef;
+        }
+        
+        .modal-title.error { color: #f85149; }
+        .modal-title.warning { color: #d29922; }
+        .modal-title.success { color: #3fb950; }
+        .modal-title.info { color: #58a6ff; }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6e7681;
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover { color: #e9ecef; }
+        
+        .modal-body {
+            padding: 20px;
+            color: #c9d1d9;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #30363d;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .modal-footer .btn { margin: 0; }
+        
+        /* Toast 通知样式 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            background: #161b22;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            padding: 16px 20px;
+            min-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+            border: 1px solid #30363d;
+        }
+        
+        .toast.success { border-left: 4px solid #3fb950; }
+        .toast.error { border-left: 4px solid #f85149; }
+        .toast.warning { border-left: 4px solid #d29922; }
+        .toast.info { border-left: 4px solid #58a6ff; }
+        
+        .toast-icon {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .toast.success .toast-icon { color: #3fb950; }
+        .toast.error .toast-icon { color: #f85149; }
+        .toast.warning .toast-icon { color: #d29922; }
+        .toast.info .toast-icon { color: #58a6ff; }
+        
+        .toast-message {
+            flex: 1;
+            color: #e9ecef;
+            font-size: 14px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: #6e7681;
+            cursor: pointer;
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+        
+        .toast-close:hover { color: #e9ecef; }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
+        
+        .toast.removing { animation: slideOutRight 0.3s ease; }
+        
+        .btn { transition: all 0.2s ease; }
+        .btn:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand">
+                    <span style="font-size: 1.5rem;">闲鱼自动收发货工具</span>
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item d-none d-md-flex me-3">
+                        <span class="status-indicator" id="nav-status-dot"></span>
+                        <span id="nav-status-text" class="text-muted">检查中...</span>
+                        <span class="status-check-time" id="status-check-time"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <div class="page-body">
+                <div class="container-xl">
+                    <!-- Stats -->
+                    <div class="row row-deck row-cards">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card stat-card">
+                                <div class="card-body">
+                                    <div class="subheader">商品总数</div>
+                                    <div class="h1 mb-0" id="stat-total">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card stat-card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="subheader text-white">自动发货</div>
+                                    <div class="h1 mb-0" id="stat-auto">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card stat-card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="subheader text-white">待处理</div>
+                                    <div class="h1 mb-0" id="stat-orders">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card stat-card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="subheader text-white">已发消息</div>
+                                    <div class="h1 mb-0" id="stat-messages">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <button class="btn btn-success" onclick="startService()">启动服务</button>
+                                    <button class="btn btn-danger" onclick="stopService()">停止服务</button>
+                                    <button class="btn btn-secondary" onclick="refreshAll()">刷新全部</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cookie Config -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header"><h3 class="card-title">账号配置</h3></div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">请从浏览器开发者工具中获取闲鱼的 Cookie 填入下方</div>
+                                    <div class="mb-3">
+                                        <label class="form-label">闲鱼 Cookie</label>
+                                        <input type="password" class="form-control" id="cookie" placeholder="请输入闲鱼 Cookie...">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="saveCookie()">保存配置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">我的商品</h3>
+                                    <button class="btn btn-secondary btn-sm" onclick="loadItems()">刷新</button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="items-container" class="row row-cards">
+                                        <div class="col-12 text-center py-5 text-muted">
+                                            暂无商品，点击"刷新"按钮加载
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><h3 class="card-title">自动发货设置</h3></div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="delivery-enabled">
+                                            <span class="form-check-label">启用自动发货</span>
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">检查间隔（秒）</label>
+                                        <input type="number" class="form-control" id="delivery-interval" value="300" min="60">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="saveDeliveryConfig()">保存设置</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><h3 class="card-title">自动收货设置</h3></div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="receive-enabled">
+                                            <span class="form-check-label">启用自动收货</span>
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">检查间隔（秒）</label>
+                                        <input type="number" class="form-control" id="receive-interval" value="600" min="60">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="saveReceiveConfig()">保存设置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message Settings -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header"><h3 class="card-title">自动消息设置</h3></div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="send-message-enabled">
+                                            <span class="form-check-label">发货后自动发送消息</span>
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">自定义消息内容</label>
+                                        <textarea class="form-control" id="custom-message" rows="2">快递正在运输中，请注意查收~</textarea>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="saveMessageConfig()">保存设置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logs -->
+                    <div class="row mt-3 mb-5">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">运行日志</h3>
+                                    <button class="btn btn-secondary btn-sm" onclick="refreshLogs()">刷新</button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="log-container" id="log-content">等待加载日志...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">提示</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                内容
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+                <button class="btn btn-primary" id="modal-confirm" onclick="confirmModal()" style="display:none;">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    <script>
+        // 定时检查服务状态（每3分钟）
+        const CHECK_INTERVAL = 3 * 60 * 1000; // 3分钟
+        let lastCheckTime = null;
+        
+        function checkServiceStatus() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            document.getElementById('status-check-time').textContent = `最后检查: ${timeStr}`;
+            lastCheckTime = now;
+            
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDot = document.getElementById('nav-status-dot');
+                    const statusText = document.getElementById('nav-status-text');
+                    
+                    if (data.running) {
+                        statusDot.className = 'status-indicator running';
+                        statusText.textContent = '运行中';
+                    } else {
+                        statusDot.className = 'status-indicator stopped';
+                        statusText.textContent = '已停止';
+                    }
+                })
+                .catch(error => {
+                    console.error('检查服务状态失败:', error);
+                    const statusDot = document.getElementById('nav-status-dot');
+                    const statusText = document.getElementById('nav-status-text');
+                    statusDot.className = 'status-indicator stopped';
+                    statusText.textContent = '检查失败';
+                });
+        }
+        
+        // 模态框函数
+        function showModal(title, message, type = 'info', hasConfirm = false, onConfirm = null) {
+            const titleEl = document.getElementById('modal-title');
+            titleEl.textContent = title;
+            titleEl.className = `modal-title ${type}`;
+            
+            const bodyEl = document.getElementById('modal-body');
+            bodyEl.textContent = message;
+            
+            const confirmBtn = document.getElementById('modal-confirm');
+            
+            if (hasConfirm) {
+                confirmBtn.style.display = 'block';
+                confirmBtn.onclick = () => {
+                    if (onConfirm) onConfirm();
+                    closeModal();
+                };
+            } else {
+                confirmBtn.style.display = 'none';
+            }
+            
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function confirmModal() {
+            document.getElementById('modal-confirm').click();
+        }
+
+        // Toast 通知函数
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '!',
+                info: 'i'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'i'}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    toast.classList.add('removing');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+        }
+
+        // 加载日志
+        function refreshLogs() {
+            const logContainer = document.getElementById('log-content');
+            logContainer.textContent = '加载中...';
+            
+            fetch('/api/logs')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.logs) {
+                        logContainer.textContent = data.logs;
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    } else {
+                        logContainer.textContent = '暂无日志';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载日志失败:', error);
+                    const errorMsg = `加载日志失败\n\n错误: ${error.message}`;
+                    logContainer.textContent = errorMsg;
+                    showModal('日志加载失败', errorMsg, 'error');
+                });
+        }
+
+        // 页面加载
+        window.addEventListener('load', () => {
+            showToast('页面加载成功', 'success', 2000);
+            checkServiceStatus();
+            refreshLogs();
+            
+            // 设置定时检查服务状态（每3分钟）
+            setInterval(checkServiceStatus, CHECK_INTERVAL);
+        });
+
+        // 占位符函数
+        function startService() {
+            showModal('启动服务', '确定要启动服务吗？', 'info', true, () => {
+                showToast('服务已启动', 'success');
+                checkServiceStatus();
+            });
+        }
+
+        function stopService() {
+            showModal('停止服务', '确定要停止服务吗？', 'warning', true, () => {
+                showToast('服务已停止', 'warning');
+                checkServiceStatus();
+            });
+        }
+
+        function refreshAll() {
+            showToast('正在刷新...', 'info');
+            setTimeout(() => {
+                showToast('刷新完成', 'success');
+                checkServiceStatus();
+                refreshLogs();
+            }, 1000);
+        }
+
+        function saveCookie() {
+            const cookie = document.getElementById('cookie').value;
+            if (!cookie) {
+                showModal('输入错误', '请输入 Cookie', 'error');
+                return;
+            }
+            showToast('Cookie 已保存', 'success');
+        }
+
+        function loadItems() {
+            showToast('正在加载商品...', 'info');
+        }
+
+        function saveDeliveryConfig() {
+            showToast('自动发货设置已保存', 'success');
+        }
+
+        function saveReceiveConfig() {
+            showToast('自动收货设置已保存', 'success');
+        }
+
+        function saveMessageConfig() {
+            showToast('消息设置已保存', 'success');
+        }
+    </script>
+</body>
+</html>

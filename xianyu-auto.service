@@ -1,0 +1,14 @@
+[Unit]
+Description=Xianyu Auto Delivery Tool
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/xianyu-auto
+ExecStart=/usr/bin/python3 /opt/xianyu-auto/web_app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
